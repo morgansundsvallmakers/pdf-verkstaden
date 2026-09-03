@@ -4,86 +4,117 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PDF-verkstaden</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
   </head>
+
   <body>
     <div id="app">
-			<h1>PDF-verkstaden</h1>
+      <h1>PDF-verkstaden</h1>
+      <p>Bearbeta PDF-filer direkt i webbläsaren. Inga filer laddas upp.</p>
 
-			<p>Bearbeta PDF-filer direkt i webbläsaren. Inga filer laddas upp.</p>
+      <!-- Startsida: här väljer användaren vilket verktyg som ska användas. -->
+      <section id="home-view">
+        <button id="merge-button" type="button">Slå ihop PDF</button>
+        <button id="split-button" type="button">Dela PDF</button>
+        <button id="booklet-button" type="button">Gör broschyr</button>
+      </section>
 
-			<button id="merge-button" type="button">Slå ihop PDF</button>
+      <!-- Arbetsyta för sammanslagning av flera PDF-filer. -->
+      <section id="merge-view" class="tool-view" hidden>
+        <h2>Slå ihop PDF</h2>
 
-			<input
-			  id="merge-input"
-			  type="file"
-			  accept="application/pdf"
-			  multiple
-			  hidden
-			/>
-			<ul id="merge-file-list"></ul>
-			<p id="merge-message"></p>
-			
-			<button id="merge-create-button" type="button">
-					Skapa sammanslagen PDF
-				</button>
-				
-			<div id="merge-download" hidden>
-				<label for="merge-filename">Filnamn</label>
-				<input id="merge-filename" type="text" value="sammanslagen.pdf">			
+        <button id="merge-select-button" type="button">Välj PDF-filer</button>
 
-				<button id="merge-download-button" type="button">
-					Ladda ner PDF
-				</button>
-			</div>
-			<button id="split-button" type="button">Dela PDF</button>
+        <input
+          id="merge-input"
+          type="file"
+          accept="application/pdf"
+          multiple
+          hidden
+        />
 
-			<input
-				id="split-input"
-				type="file"
-				accept="application/pdf"
-				hidden
-			/>
+        <ul id="merge-file-list"></ul>
+        <p id="merge-message"></p>
 
-			<div id="split-controls" hidden>
-				<label for="split-after-page">Dela efter sida</label>
-				<input id="split-after-page" type="number" min="1">
+        <button id="merge-create-button" type="button" hidden>
+          Skapa sammanslagen PDF
+        </button>
 
-				<button id="split-create-button" type="button">
-					Skapa två PDF-filer
-				</button>
-			</div>
+        <div id="merge-download" hidden>
+          <label for="merge-filename">Filnamn</label>
+          <input id="merge-filename" type="text" value="sammanslagen.pdf">
 
-			<p id="split-message"></p>
-			<div id="split-download" hidden>
-				<button id="split-download-button" type="button">
-					Ladda ner båda PDF-filerna
-				</button>
-			</div>
+          <button id="merge-download-button" type="button">
+            Ladda ner PDF
+          </button>
+        </div>
 
-			<button id="booklet-button" type="button">Gör broschyr</button>
+        <button class="home-button" type="button">Till startsidan</button>
+      </section>
 
-			<input
-				id="booklet-input"
-				type="file"
-				accept="application/pdf"
-				hidden
-			/>
+      <!-- Arbetsyta för att dela en PDF-fil i två delar. -->
+      <section id="split-view" class="tool-view" hidden>
+        <h2>Dela PDF</h2>
 
-			<p id="booklet-message"></p>
-			<div id="booklet-download" hidden>
-				<label for="booklet-filename">Filnamn</label>
-				<input id="booklet-filename" type="text" value="broschyr.pdf">
+        <button id="split-select-button" type="button">Välj PDF-fil</button>
 
-				<button id="booklet-download-button" type="button">
-					Ladda ner broschyr-PDF
-				</button>
-			</div>
-   </div>
+        <input
+          id="split-input"
+          type="file"
+          accept="application/pdf"
+          hidden
+        />
 
-		<!-- PDF-biblioteket ligger lokalt så att inga externa skript behöver hämtas. -->
-		<script src="pdf-lib.min.js"></script>
-		<script src="main.js?v=26"></script>
+        <p id="split-message"></p>
 
+        <div id="split-controls" hidden>
+          <label for="split-after-page">Dela efter sida</label>
+          <input id="split-after-page" type="number" min="1">
+
+          <button id="split-create-button" type="button">
+            Skapa två PDF-filer
+          </button>
+        </div>
+
+        <div id="split-download" hidden>
+          <button id="split-download-button" type="button">
+            Ladda ner båda PDF-filerna
+          </button>
+        </div>
+
+        <button class="home-button" type="button">Till startsidan</button>
+      </section>
+
+      <!-- Arbetsyta för fyrsidig broschyr. -->
+      <section id="booklet-view" class="tool-view" hidden>
+        <h2>Gör broschyr</h2>
+
+        <button id="booklet-select-button" type="button">Välj PDF-fil</button>
+
+        <input
+          id="booklet-input"
+          type="file"
+          accept="application/pdf"
+          hidden
+        />
+
+        <p id="booklet-message"></p>
+
+        <div id="booklet-download" hidden>
+          <label for="booklet-filename">Filnamn</label>
+          <input id="booklet-filename" type="text" value="broschyr.pdf">
+
+          <button id="booklet-download-button" type="button">
+            Ladda ner broschyr-PDF
+          </button>
+        </div>
+
+        <button class="home-button" type="button">Till startsidan</button>
+      </section>
+    </div>
+
+    <!-- PDF-biblioteket ligger lokalt så att inga externa skript behöver hämtas. -->
+    <script src="pdf-lib.min.js"></script>
+    <script src="main.js?v=27"></script>
   </body>
 </html>
