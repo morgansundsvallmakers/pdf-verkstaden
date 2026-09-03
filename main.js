@@ -1,32 +1,46 @@
+// ------------------------------------------------------------
+// GEMENSAMT GRÄNSSNITT
+// ------------------------------------------------------------
+
+const homeView = document.querySelector('#home-view')
+const toolViews = document.querySelectorAll('.tool-view')
+const homeButtons = document.querySelectorAll('.home-button')
+
 const mergeButton = document.querySelector('#merge-button')
+const mergeView = document.querySelector('#merge-view')
+const mergeSelectButton = document.querySelector('#merge-select-button')
 const mergeInput = document.querySelector('#merge-input')
 const mergeFileList = document.querySelector('#merge-file-list')
 const mergeMessage = document.querySelector('#merge-message')
+const mergeCreateButton = document.querySelector('#merge-create-button')
 const mergeDownload = document.querySelector('#merge-download')
 const mergeFilename = document.querySelector('#merge-filename')
 const mergeDownloadButton = document.querySelector('#merge-download-button')
-const mergeCreateButton = document.querySelector('#merge-create-button')
+
+const splitButton = document.querySelector('#split-button')
+const splitView = document.querySelector('#split-view')
+const splitSelectButton = document.querySelector('#split-select-button')
+const splitInput = document.querySelector('#split-input')
+const splitMessage = document.querySelector('#split-message')
+const splitControls = document.querySelector('#split-controls')
+const splitAfterPage = document.querySelector('#split-after-page')
+const splitCreateButton = document.querySelector('#split-create-button')
+const splitDownload = document.querySelector('#split-download')
+const splitDownloadButton = document.querySelector('#split-download-button')
 
 const bookletButton = document.querySelector('#booklet-button')
+const bookletView = document.querySelector('#booklet-view')
+const bookletSelectButton = document.querySelector('#booklet-select-button')
 const bookletInput = document.querySelector('#booklet-input')
 const bookletMessage = document.querySelector('#booklet-message')
 const bookletDownload = document.querySelector('#booklet-download')
 const bookletFilename = document.querySelector('#booklet-filename')
 const bookletDownloadButton = document.querySelector('#booklet-download-button')
 
-const splitButton = document.querySelector('#split-button')
-const splitInput = document.querySelector('#split-input')
-const splitControls = document.querySelector('#split-controls')
-const splitAfterPage = document.querySelector('#split-after-page')
-const splitCreateButton = document.querySelector('#split-create-button')
-const splitMessage = document.querySelector('#split-message')
-const splitDownload = document.querySelector('#split-download')
-const splitDownloadButton = document.querySelector('#split-download-button')
-
 let mergedPdfUrl = null
-let bookletPdfUrl = null
 let firstSplitPdfUrl = null
 let secondSplitPdfUrl = null
+let bookletPdfUrl = null
 
 // Egen lista över de valda filerna.
 // Till skillnad från FileList kan en vanlig array ordnas om.
@@ -35,13 +49,41 @@ let selectedMergeFiles = []
 let selectedSplitFile = null
 let selectedSplitPageCount = 0
 
+// Visa startsidan och dölj alla verktygens arbetsytor.
+function showHome() {
+  homeView.hidden = false
+
+  for (const view of toolViews) {
+    view.hidden = true
+  }
+}
+
+// Visa en arbetsyta och dölj startsidan och övriga verktyg.
+function showTool(viewToShow) {
+  homeView.hidden = true
+
+  for (const view of toolViews) {
+    view.hidden = view !== viewToShow
+  }
+}
+
+// Alla "Till startsidan"-knappar använder samma funktion.
+for (const button of homeButtons) {
+  button.addEventListener('click', showHome)
+}
+
 
 // ------------------------------------------------------------
 // SLÅ IHOP PDF
 // ------------------------------------------------------------
 
-// Öppna filväljaren när användaren klickar på "Slå ihop PDF".
+// Gå till arbetsytan för sammanslagning.
 mergeButton?.addEventListener('click', () => {
+  showTool(mergeView)
+})
+
+// Öppna filväljaren först när användaren ber om att välja filer.
+mergeSelectButton?.addEventListener('click', () => {
   mergeInput?.click()
 })
 
@@ -108,12 +150,15 @@ mergeInput?.addEventListener('change', () => {
 
   renderMergeFileList()
 
-  // En tidigare skapad PDF gäller inte längre när filvalet ändras.
+  // Ett tidigare resultat gäller inte längre när filvalet ändras.
   mergeDownload.hidden = true
 
+  // Skapa-knappen behövs först när minst två filer har valts.
   if (selectedMergeFiles.length < 2) {
+    mergeCreateButton.hidden = true
     mergeMessage.textContent = 'Välj minst två PDF-filer.'
   } else {
+    mergeCreateButton.hidden = false
     mergeMessage.textContent = ''
   }
 })
@@ -169,8 +214,13 @@ mergeDownloadButton?.addEventListener('click', () => {
 // DELA PDF
 // ------------------------------------------------------------
 
-// Öppna filväljaren när användaren klickar på "Dela PDF".
+// Gå till arbetsytan för delning.
 splitButton?.addEventListener('click', () => {
+  showTool(splitView)
+})
+
+// Öppna filväljaren först när användaren ber om att välja en fil.
+splitSelectButton?.addEventListener('click', () => {
   splitInput?.click()
 })
 
@@ -242,11 +292,9 @@ splitCreateButton?.addEventListener('click', async () => {
     }
   }
 
-  // Kopiera rätt sidor från originalet.
   const firstPages = await firstPdf.copyPages(sourcePdf, firstPageIndices)
   const secondPages = await secondPdf.copyPages(sourcePdf, secondPageIndices)
 
-  // Lägg först in de kopierade sidorna i de nya dokumenten.
   for (const page of firstPages) {
     firstPdf.addPage(page)
   }
@@ -255,7 +303,6 @@ splitCreateButton?.addEventListener('click', async () => {
     secondPdf.addPage(page)
   }
 
-  // Först därefter sparas de färdiga PDF-dokumenten.
   const firstPdfBytes = await firstPdf.save()
   const secondPdfBytes = await secondPdf.save()
 
@@ -276,9 +323,6 @@ splitCreateButton?.addEventListener('click', async () => {
   )
 
   splitDownload.hidden = false
-
-  console.log('Första PDF:', firstPdf.getPageCount(), 'sidor')
-  console.log('Andra PDF:', secondPdf.getPageCount(), 'sidor')
 })
 
 // Ladda ner båda delarna när användaren ber om det.
@@ -303,8 +347,13 @@ splitDownloadButton?.addEventListener('click', () => {
 // GÖR BROSCHYR
 // ------------------------------------------------------------
 
-// Öppna filväljaren när användaren klickar på "Gör broschyr".
+// Gå till arbetsytan för broschyr.
 bookletButton?.addEventListener('click', () => {
+  showTool(bookletView)
+})
+
+// Öppna filväljaren först när användaren ber om att välja en fil.
+bookletSelectButton?.addEventListener('click', () => {
   bookletInput?.click()
 })
 
@@ -340,7 +389,8 @@ bookletInput?.addEventListener('change', async () => {
   const sheetWidth = originalWidth * 2
   const sheetHeight = originalHeight
 
-  // Framsida: sida 4 till vänster, sida 1 till höger.
+  // Framsidan ses i sin vanliga orientering: sida 4 till vänster,
+  // sida 1 till höger.
   const front = bookletPdf.addPage([sheetWidth, sheetHeight])
 
   front.drawPage(
@@ -363,26 +413,31 @@ bookletInput?.addEventListener('change', async () => {
     }
   )
 
-  // Baksida: sida 2 till vänster, sida 3 till höger.
+  // Baksidan motsvarar hela arket roterat 180 grader.
+  // Därför byter sida 2 och 3 plats samtidigt som båda roteras.
+  // Det ger sida 3 till vänster och sida 2 till höger i PDF-filen,
+  // men rätt läsordning efter duplexutskrift och vikning.
   const back = bookletPdf.addPage([sheetWidth, sheetHeight])
-
-  back.drawPage(
-    await bookletPdf.embedPage(originalPages[1]),
-    {
-      x: 0,
-      y: 0,
-      width: originalWidth,
-      height: originalHeight,
-    }
-  )
 
   back.drawPage(
     await bookletPdf.embedPage(originalPages[2]),
     {
       x: originalWidth,
-      y: 0,
+      y: originalHeight,
       width: originalWidth,
       height: originalHeight,
+      rotate: PDFLib.degrees(180),
+    }
+  )
+
+  back.drawPage(
+    await bookletPdf.embedPage(originalPages[1]),
+    {
+      x: sheetWidth,
+      y: originalHeight,
+      width: originalWidth,
+      height: originalHeight,
+      rotate: PDFLib.degrees(180),
     }
   )
 
