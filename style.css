@@ -17,21 +17,52 @@ button {
   width: 100%;
   margin: 12px 0;
   padding: 14px 18px;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-button {
   border: 1px solid #cfcfcf;
   border-radius: 10px;
   background: white;
   color: #222;
+  font-size: 1rem;
   font-weight: 600;
+  cursor: pointer;
 }
 
 button:hover {
   background: #eeeeee;
 }
+
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.tool-view h2 {
+  margin-top: 32px;
+}
+
+.tool-view label {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+
+.tool-view input[type="text"],
+.tool-view input[type="number"] {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+}
+
+.home-button {
+  margin-top: 32px;
+  background: transparent;
+}
+
+#merge-file-list {
+  padding: 0;
+  list-style: none;
+}
+
 #merge-file-list li {
   display: flex;
   align-items: center;
@@ -41,6 +72,7 @@ button:hover {
 
 #merge-file-list li span {
   flex: 1;
+  text-align: left;
 }
 
 #merge-file-list button {
