@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PDF-verkstaden</title>
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
   </head>
 
   <body>
@@ -67,15 +67,22 @@
 
         <p id="split-message"></p>
 
-        <!-- Enkel test-preview: första sidan renderas lokalt med PDF.js. -->
-        <div id="split-preview" hidden>
-          <p>Förhandsvisning av första sidan</p>
-          <canvas id="split-preview-canvas"></canvas>
-        </div>
-
         <div id="split-controls" hidden>
           <label for="split-after-page">Dela efter sida</label>
           <input id="split-after-page" type="number" min="1">
+
+          <!-- Två små previews visar sidorna på varsin sida om delningspunkten. -->
+          <div id="split-preview" hidden>
+            <div class="split-preview-page">
+              <p>Del 1 slutar med sida <span id="split-preview-left-number"></span></p>
+              <canvas id="split-preview-left-canvas"></canvas>
+            </div>
+
+            <div class="split-preview-page">
+              <p>Del 2 börjar med sida <span id="split-preview-right-number"></span></p>
+              <canvas id="split-preview-right-canvas"></canvas>
+            </div>
+          </div>
 
           <button id="split-create-button" type="button">
             Skapa två PDF-filer
@@ -121,6 +128,6 @@
 
     <!-- PDF-biblioteket ligger lokalt så att inga externa skript behöver hämtas. -->
     <script src="pdf-lib.min.js"></script>
-    <script src="main.js?v=28"></script>
+    <script src="main.js?v=29"></script>
   </body>
 </html>
