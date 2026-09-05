@@ -67,6 +67,9 @@ async function renderMergePreviews() {
     const file = mergePreviewFiles[index]
     if (!file) continue
 
+    // Rita inte dubbla previews om listan redan är kompletterad.
+    if (item.querySelector('.merge-preview-canvas')) continue
+
     const canvas = document.createElement('canvas')
     canvas.className = 'merge-preview-canvas'
     item.prepend(canvas)
@@ -87,7 +90,7 @@ mergePreviewInput?.addEventListener('change', () => {
 })
 
 // main.js flyttar filerna när ↑ eller ↓ används. Vi speglar samma flyttning
-// i vår preview-lista och ritar sedan om korten i den nya ordningen.
+// i vår preview-lista innan main.js bygger om listan.
 mergePreviewList?.addEventListener('click', (event) => {
   const button = event.target.closest('button')
   const item = event.target.closest('li')
@@ -107,7 +110,26 @@ mergePreviewList?.addEventListener('click', (event) => {
     ;[mergePreviewFiles[index + 1], mergePreviewFiles[index]] =
       [mergePreviewFiles[index], mergePreviewFiles[index + 1]]
   }
-
-  // main.js hinner först bygga om listan efter klicket.
-  queueMicrotask(renderMergePreviews)
 }, true)
+
+// När main.js bygger om <ul>-listan efter en ordningsändring försvinner de gamla
+// canvas-elementen tillsammans med de gamla <li>-elementen. MutationObservern
+// ser att själva listans barn har bytts ut och lägger då tillbaka previews i
+// den nya ordningen. Ändringar inne i en listpost ignoreras, så att vi inte
+// triggar oss själva när canvas-elementen läggs till.
+if (mergePreviewList) {
+  const mergeListObserver = new MutationObserver((mutations) => {
+    const listWasRebuilt = mutations.some(
+      (mutation) => mutation.target === mergePreviewList
+    )
+
+    if (listWasRebuilt) {
+      renderMergePreviews()
+    }
+  })
+
+  mergeListObserver.observe(mergePreviewList, {
+    childList: true,
+    subtree: true,
+  })
+}
