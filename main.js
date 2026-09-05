@@ -22,6 +22,8 @@ const splitView = document.querySelector('#split-view')
 const splitSelectButton = document.querySelector('#split-select-button')
 const splitInput = document.querySelector('#split-input')
 const splitMessage = document.querySelector('#split-message')
+const splitPreview = document.querySelector('#split-preview')
+const splitPreviewCanvas = document.querySelector('#split-preview-canvas')
 const splitControls = document.querySelector('#split-controls')
 const splitAfterPage = document.querySelector('#split-after-page')
 const splitCreateButton = document.querySelector('#split-create-button')
@@ -41,6 +43,10 @@ let mergedPdfUrl = null
 let firstSplitPdfUrl = null
 let secondSplitPdfUrl = null
 let bookletPdfUrl = null
+
+// PDF.js laddas först om en förhandsvisning faktiskt behövs.
+// Biblioteket ligger lokalt i projektets pdfjs-mapp.
+let pdfJsPromise = null
 
 // Egen lista över de valda filerna.
 // Till skillnad från FileList kan en vanlig array ordnas om.
@@ -224,14 +230,59 @@ splitSelectButton?.addEventListener('click', () => {
   splitInput?.click()
 })
 
+// Rendera första sidan av en PDF lokalt i ett canvas-element.
+async function renderSplitPreview(file) {
+  if (!splitPreview || !splitPreviewCanvas) return
+
+  splitPreview.hidden = true
+
+  // Dynamic import gör att PDF.js inte laddas förrän preview används.
+  if (!pdfJsPromise) {
+    pdfJsPromise = import('./pdfjs/pdf.min.mjs')
+  }
+
+  const pdfjs = await pdfJsPromise
+  pdfjs.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
+
+  const bytes = await file.arrayBuffer()
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise
+  const page = await pdf.getPage(1)
+
+  // Anpassa previewn till arbetsytans bredd utan att förstora små sidor.
+  const unscaledViewport = page.getViewport({ scale: 1 })
+  const availableWidth = Math.min(splitView.clientWidth || 440, 440)
+  const scale = Math.min(1, availableWidth / unscaledViewport.width)
+  const viewport = page.getViewport({ scale })
+
+  // Rita med skärmens pixeltäthet så att texten blir skarp även på HiDPI-skärmar.
+  const outputScale = window.devicePixelRatio || 1
+  const context = splitPreviewCanvas.getContext('2d')
+
+  splitPreviewCanvas.width = Math.floor(viewport.width * outputScale)
+  splitPreviewCanvas.height = Math.floor(viewport.height * outputScale)
+  splitPreviewCanvas.style.width = `${Math.floor(viewport.width)}px`
+  splitPreviewCanvas.style.height = `${Math.floor(viewport.height)}px`
+
+  await page.render({
+    canvasContext: context,
+    viewport,
+    transform: outputScale === 1
+      ? null
+      : [outputScale, 0, 0, outputScale, 0, 0],
+  }).promise
+
+  splitPreview.hidden = false
+}
+
 // Läs den valda PDF-filen och visa delningskontrollerna.
 splitInput?.addEventListener('change', async () => {
   const file = splitInput.files?.[0]
 
   if (!file || !splitMessage) return
 
-  // Ett gammalt resultat gäller inte längre när en ny fil väljs.
+  // Ett gammalt resultat och en gammal preview gäller inte längre.
   splitDownload.hidden = true
+  splitPreview.hidden = true
 
   selectedSplitFile = file
 
@@ -248,6 +299,14 @@ splitInput?.addEventListener('change', async () => {
 
   splitMessage.textContent =
     `Den valda PDF-filen har ${selectedSplitPageCount} sidor.`
+
+  // Preview är bara ett hjälpmedel. Om den skulle misslyckas ska delning fortfarande fungera.
+  try {
+    await renderSplitPreview(file)
+  } catch (error) {
+    splitPreview.hidden = true
+    console.error('Förhandsvisningen kunde inte skapas:', error)
+  }
 
   // Delningspunkten får inte ligga före första eller efter sista sidan.
   splitAfterPage.max = selectedSplitPageCount - 1
