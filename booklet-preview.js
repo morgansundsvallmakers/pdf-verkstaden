@@ -89,7 +89,13 @@ async function renderBookletOriginal() {
 // gränssnittet håller vi nedladdningen dold tills användaren klickar på
 // "Gör broschyr", så att före- och efterstegen blir tydliga.
 const bookletDownloadObserver = new MutationObserver(() => {
-  if (!bookletPreviewCreated && bookletPreviewDownload) {
+  // Ändra bara attributet om main.js faktiskt har visat nedladdningen.
+  // Annars skulle observern reagera på sin egen ändring om och om igen.
+  if (
+    !bookletPreviewCreated &&
+    bookletPreviewDownload &&
+    !bookletPreviewDownload.hidden
+  ) {
     bookletPreviewDownload.hidden = true
   }
 })
