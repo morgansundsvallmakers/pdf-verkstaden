@@ -33,7 +33,10 @@ async function renderMergePreview(file, canvas) {
 
   const page = await pdf.getPage(1)
   const unscaledViewport = page.getViewport({ scale: 1 })
-  const availableWidth = 210
+
+  // I Slå ihop används previewn bara för igenkänning. En liten renderad bild
+  // räcker och minskar samtidigt arbetet som webbläsaren behöver göra.
+  const availableWidth = 110
   const scale = Math.min(1, availableWidth / unscaledViewport.width)
   const viewport = page.getViewport({ scale })
 
@@ -43,7 +46,7 @@ async function renderMergePreview(file, canvas) {
   canvas.width = Math.floor(viewport.width * outputScale)
   canvas.height = Math.floor(viewport.height * outputScale)
   canvas.style.width = `${Math.floor(viewport.width)}px`
-  canvas.style.height = `${Math.floor(viewport.height)}px`
+  canvas.style.height = 'auto'
 
   await page.render({
     canvasContext: context,
