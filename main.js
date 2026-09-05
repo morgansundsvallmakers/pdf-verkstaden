@@ -464,6 +464,34 @@ bookletSelectButton?.addEventListener('click', () => {
   bookletInput?.click()
 })
 
+// Räkna ut en placering som bevarar sidans proportioner.
+// Sida 1 bestämmer storleken på varje broschyrhalva. Andra sidformat
+// skalas bara ned om det behövs och centreras utan att sträckas.
+function getBookletPlacement(page, slotX, slotY, slotWidth, slotHeight, rotation = 0) {
+  const pageWidth = page.getWidth()
+  const pageHeight = page.getHeight()
+  const scale = Math.min(1, slotWidth / pageWidth, slotHeight / pageHeight)
+  const width = pageWidth * scale
+  const height = pageHeight * scale
+
+  if (rotation === 180) {
+    return {
+      x: slotX + (slotWidth + width) / 2,
+      y: slotY + (slotHeight + height) / 2,
+      width,
+      height,
+      rotate: PDFLib.degrees(180),
+    }
+  }
+
+  return {
+    x: slotX + (slotWidth - width) / 2,
+    y: slotY + (slotHeight - height) / 2,
+    width,
+    height,
+  }
+}
+
 // Läs PDF-filen och gör en enkel broschyr av exakt fyra sidor.
 bookletInput?.addEventListener('change', async () => {
   bookletDownload.hidden = true
@@ -502,22 +530,24 @@ bookletInput?.addEventListener('change', async () => {
 
   front.drawPage(
     await bookletPdf.embedPage(originalPages[3]),
-    {
-      x: 0,
-      y: 0,
-      width: originalWidth,
-      height: originalHeight,
-    }
+    getBookletPlacement(
+      originalPages[3],
+      0,
+      0,
+      originalWidth,
+      originalHeight
+    )
   )
 
   front.drawPage(
     await bookletPdf.embedPage(originalPages[0]),
-    {
-      x: originalWidth,
-      y: 0,
-      width: originalWidth,
-      height: originalHeight,
-    }
+    getBookletPlacement(
+      originalPages[0],
+      originalWidth,
+      0,
+      originalWidth,
+      originalHeight
+    )
   )
 
   // Baksidan motsvarar hela arket roterat 180 grader.
@@ -528,24 +558,26 @@ bookletInput?.addEventListener('change', async () => {
 
   back.drawPage(
     await bookletPdf.embedPage(originalPages[2]),
-    {
-      x: originalWidth,
-      y: originalHeight,
-      width: originalWidth,
-      height: originalHeight,
-      rotate: PDFLib.degrees(180),
-    }
+    getBookletPlacement(
+      originalPages[2],
+      0,
+      0,
+      originalWidth,
+      originalHeight,
+      180
+    )
   )
 
   back.drawPage(
     await bookletPdf.embedPage(originalPages[1]),
-    {
-      x: sheetWidth,
-      y: originalHeight,
-      width: originalWidth,
-      height: originalHeight,
-      rotate: PDFLib.degrees(180),
-    }
+    getBookletPlacement(
+      originalPages[1],
+      originalWidth,
+      0,
+      originalWidth,
+      originalHeight,
+      180
+    )
   )
 
   const bookletPdfBytes = await bookletPdf.save()
