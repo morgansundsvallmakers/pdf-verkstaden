@@ -83,7 +83,7 @@ async function renderBookletOriginal() {
       bookletPreviewPdf,
       index + 1,
       bookletOriginalCanvases[index],
-      210
+      170
     )
 
     // Ge webbläsaren en chans att uppdatera gränssnittet mellan sidorna.
@@ -179,8 +179,8 @@ bookletCreateButton?.addEventListener('click', async () => {
     }).promise
 
     // Resultat-PDF:ens sida 1 är arkets framsida och sida 2 är baksidan.
-    await renderBookletPage(resultPdf, 1, bookletFrontCanvas, 440)
-    await renderBookletPage(resultPdf, 2, bookletBackCanvas, 440)
+    await renderBookletPage(resultPdf, 1, bookletFrontCanvas, 360)
+    await renderBookletPage(resultPdf, 2, bookletBackCanvas, 360)
 
     bookletPreviewCreated = true
     bookletResultPreview.hidden = false
