@@ -58,8 +58,8 @@ button:disabled {
   background: transparent;
 }
 
-/* Slå ihop fungerar främst som en sorteringslista. Previewn är därför
-   avsiktligt liten: den ska hjälpa till att känna igen filen, inte läsa den. */
+/* Slå ihop visas som en enkel lista med ett kort per fil. Previewn hjälper
+   till att känna igen dokumentet, medan filnamn och ordningsknappar ligger under. */
 #merge-file-list {
   display: grid;
   grid-template-columns: 1fr;
@@ -70,9 +70,9 @@ button:disabled {
 
 #merge-file-list li {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr) 28px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   padding: 6px;
   border: 1px solid #e0e0e0;
@@ -88,8 +88,6 @@ button:disabled {
 }
 
 #merge-file-list button {
-  grid-column: 3;
-  grid-row: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -101,21 +99,12 @@ button:disabled {
   font-size: 0.9rem;
 }
 
-/* Båda knapparna ligger i samma gridcell och flyttas lite upp/ner.
-   Då bestämmer previewns höjd hela raden, så miniatyrerna kan inte överlappa. */
-#merge-file-list li button:first-of-type {
-  transform: translateY(-17px);
-}
-
-#merge-file-list li button:last-of-type {
-  transform: translateY(17px);
-}
-
 .merge-preview-canvas {
+  grid-column: 1 / -1;
   display: block;
   max-width: 110px;
   height: auto;
-  margin: 0;
+  margin: 0 auto 2px;
   border: 1px solid #d6d6d6;
   background: white;
 }
@@ -183,10 +172,6 @@ button:disabled {
 }
 
 @media (max-width: 420px) {
-  #merge-file-list li {
-    grid-template-columns: 90px minmax(0, 1fr) 28px;
-  }
-
   .merge-preview-canvas {
     max-width: 90px;
   }
