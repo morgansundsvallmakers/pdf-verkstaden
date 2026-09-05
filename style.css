@@ -88,15 +88,23 @@ button:disabled {
 }
 
 #split-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin: 20px 0;
 }
 
-#split-preview p {
-  margin-bottom: 8px;
-  font-size: 0.9rem;
+.split-preview-page {
+  min-width: 0;
 }
 
-#split-preview-canvas {
+.split-preview-page p {
+  min-height: 2.4em;
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+}
+
+.split-preview-page canvas {
   display: block;
   max-width: 100%;
   height: auto;
