@@ -86,3 +86,21 @@ button:disabled {
   border-radius: 6px;
   font-size: 0.9rem;
 }
+
+#split-preview {
+  margin: 20px 0;
+}
+
+#split-preview p {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+#split-preview-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid #d6d6d6;
+  background: white;
+}
