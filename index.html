@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PDF-verkstaden</title>
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
   </head>
 
   <body>
@@ -113,6 +113,34 @@
 
         <p id="booklet-message"></p>
 
+        <!-- Före: originalets fyra sidor i vanlig läsordning. -->
+        <div id="booklet-original-preview" hidden>
+          <h3>Original</h3>
+          <div class="booklet-original-grid">
+            <div><p>Sida 1</p><canvas id="booklet-original-1"></canvas></div>
+            <div><p>Sida 2</p><canvas id="booklet-original-2"></canvas></div>
+            <div><p>Sida 3</p><canvas id="booklet-original-3"></canvas></div>
+            <div><p>Sida 4</p><canvas id="booklet-original-4"></canvas></div>
+          </div>
+        </div>
+
+        <button id="booklet-create-button" type="button" hidden>
+          Gör broschyr
+        </button>
+
+        <!-- Efter: de två verkliga arken i den skapade broschyr-PDF:en. -->
+        <div id="booklet-result-preview" hidden>
+          <h3>Resultat</h3>
+          <div class="booklet-sheet-preview">
+            <p>Framsida — sida 4 | sida 1</p>
+            <canvas id="booklet-front-canvas"></canvas>
+          </div>
+          <div class="booklet-sheet-preview">
+            <p>Baksida — sida 3 | sida 2</p>
+            <canvas id="booklet-back-canvas"></canvas>
+          </div>
+        </div>
+
         <div id="booklet-download" hidden>
           <label for="booklet-filename">Filnamn</label>
           <input id="booklet-filename" type="text" value="broschyr.pdf">
@@ -129,6 +157,7 @@
     <!-- PDF-biblioteket ligger lokalt så att inga externa skript behöver hämtas. -->
     <script src="pdf-lib.min.js"></script>
     <script src="main.js?v=29"></script>
-    <script src="merge-preview.js?v=1"></script>
+    <script src="merge-preview.js?v=2"></script>
+    <script src="booklet-preview.js?v=1"></script>
   </body>
 </html>
