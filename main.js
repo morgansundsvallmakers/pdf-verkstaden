@@ -245,7 +245,10 @@ async function renderSplitPreview(file) {
   pdfjs.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
 
   const bytes = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise
+  const pdf = await pdfjs.getDocument({
+    data: new Uint8Array(bytes),
+    wasmUrl: './pdfjs/wasm/',
+  }).promise
   const page = await pdf.getPage(1)
 
   // Anpassa previewn till arbetsytans bredd utan att förstora små sidor.
