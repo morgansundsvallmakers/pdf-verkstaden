@@ -605,3 +605,324 @@ bookletDownloadButton?.addEventListener('click', () => {
   downloadLink.download = bookletFilename?.value || 'broschyr.pdf'
   downloadLink.click()
 })
+
+
+// ------------------------------------------------------------
+// FÖRHANDSVISNING FÖR SLÅ IHOP PDF
+// ------------------------------------------------------------
+
+const mergePreviewInput = document.querySelector('#merge-input')
+const mergePreviewList = document.querySelector('#merge-file-list')
+
+let mergePreviewFiles = []
+let mergePdfJsPromise = null
+
+async function getMergePdfJs() {
+  if (!mergePdfJsPromise) {
+    mergePdfJsPromise = import('./pdfjs/pdf.min.mjs')
+  }
+
+  const pdfjs = await mergePdfJsPromise
+  pdfjs.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
+  return pdfjs
+}
+
+// Rendera första sidan av en fil som en liten bild i fillistan.
+async function renderMergePreview(file, canvas) {
+  const pdfjs = await getMergePdfJs()
+  const bytes = await file.arrayBuffer()
+
+  const pdf = await pdfjs.getDocument({
+    data: new Uint8Array(bytes),
+    wasmUrl: './pdfjs/wasm/',
+  }).promise
+
+  const page = await pdf.getPage(1)
+  const unscaledViewport = page.getViewport({ scale: 1 })
+
+  // I Slå ihop används previewn bara för igenkänning. En liten renderad bild
+  // räcker och minskar samtidigt arbetet som webbläsaren behöver göra.
+  const availableWidth = 110
+  const scale = Math.min(1, availableWidth / unscaledViewport.width)
+  const viewport = page.getViewport({ scale })
+
+  const outputScale = window.devicePixelRatio || 1
+  const context = canvas.getContext('2d')
+
+  canvas.width = Math.floor(viewport.width * outputScale)
+  canvas.height = Math.floor(viewport.height * outputScale)
+  canvas.style.width = `${Math.floor(viewport.width)}px`
+  canvas.style.height = 'auto'
+
+  await page.render({
+    canvasContext: context,
+    viewport,
+    transform: outputScale === 1
+      ? null
+      : [outputScale, 0, 0, outputScale, 0, 0],
+  }).promise
+}
+
+// Fillistan och pilknapparna skapas ovan. Här kompletteras varje listpost
+// med en preview av den första sidan.
+async function renderMergePreviews() {
+  if (!mergePreviewList) return
+
+  const items = Array.from(mergePreviewList.querySelectorAll('li'))
+
+  for (const [index, item] of items.entries()) {
+    const file = mergePreviewFiles[index]
+    if (!file) continue
+
+    // Rita inte dubbla previews om listan redan är kompletterad.
+    if (item.querySelector('.merge-preview-canvas')) continue
+
+    const canvas = document.createElement('canvas')
+    canvas.className = 'merge-preview-canvas'
+    item.prepend(canvas)
+
+    try {
+      await renderMergePreview(file, canvas)
+    } catch (error) {
+      canvas.remove()
+      console.error(`Förhandsvisningen av ${file.name} kunde inte skapas:`, error)
+    }
+  }
+}
+
+// Vid ett nytt filval börjar preview-ordningen om från FileListens ordning.
+mergePreviewInput?.addEventListener('change', () => {
+  mergePreviewFiles = Array.from(mergePreviewInput.files || [])
+  renderMergePreviews()
+})
+
+// När ↑ eller ↓ används speglas samma flyttning i preview-listan innan
+// huvudlistan byggs om.
+mergePreviewList?.addEventListener('click', (event) => {
+  const button = event.target.closest('button')
+  const item = event.target.closest('li')
+
+  if (!button || !item) return
+
+  const items = Array.from(mergePreviewList.querySelectorAll('li'))
+  const index = items.indexOf(item)
+  const direction = button.textContent
+
+  if (direction === '↑' && index > 0) {
+    ;[mergePreviewFiles[index - 1], mergePreviewFiles[index]] =
+      [mergePreviewFiles[index], mergePreviewFiles[index - 1]]
+  }
+
+  if (direction === '↓' && index < mergePreviewFiles.length - 1) {
+    ;[mergePreviewFiles[index + 1], mergePreviewFiles[index]] =
+      [mergePreviewFiles[index], mergePreviewFiles[index + 1]]
+  }
+}, true)
+
+// När huvudlistan byggs om försvinner canvas-elementen tillsammans med de
+// gamla listposterna. Lägg då tillbaka previews i den nya ordningen.
+if (mergePreviewList) {
+  const mergeListObserver = new MutationObserver((mutations) => {
+    const listWasRebuilt = mutations.some(
+      (mutation) => mutation.target === mergePreviewList
+    )
+
+    if (listWasRebuilt) {
+      renderMergePreviews()
+    }
+  })
+
+  mergeListObserver.observe(mergePreviewList, {
+    childList: true,
+    subtree: true,
+  })
+}
+
+
+// ------------------------------------------------------------
+// FÖRHANDSVISNING FÖR GÖR BROSCHYR
+// ------------------------------------------------------------
+
+// Först visas originalets fyra sidor. När användaren väljer "Gör broschyr"
+// visas sedan de två verkliga arken från den skapade broschyr-PDF:en.
+
+const bookletPreviewInput = document.querySelector('#booklet-input')
+const bookletOriginalPreview = document.querySelector('#booklet-original-preview')
+const bookletCreateButton = document.querySelector('#booklet-create-button')
+const bookletResultPreview = document.querySelector('#booklet-result-preview')
+const bookletPreviewDownload = document.querySelector('#booklet-download')
+
+const bookletOriginalCanvases = [
+  document.querySelector('#booklet-original-1'),
+  document.querySelector('#booklet-original-2'),
+  document.querySelector('#booklet-original-3'),
+  document.querySelector('#booklet-original-4'),
+]
+
+const bookletFrontCanvas = document.querySelector('#booklet-front-canvas')
+const bookletBackCanvas = document.querySelector('#booklet-back-canvas')
+
+let bookletPdfJsPromise = null
+let bookletPreviewPdf = null
+let bookletPreviewCreated = false
+let bookletPreviousResultUrl = null
+
+async function getBookletPdfJs() {
+  if (!bookletPdfJsPromise) {
+    bookletPdfJsPromise = import('./pdfjs/pdf.min.mjs')
+  }
+
+  const pdfjs = await bookletPdfJsPromise
+  pdfjs.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
+  return pdfjs
+}
+
+async function loadBookletPreviewPdf(file) {
+  const pdfjs = await getBookletPdfJs()
+  const bytes = await file.arrayBuffer()
+
+  return pdfjs.getDocument({
+    data: new Uint8Array(bytes),
+    wasmUrl: './pdfjs/wasm/',
+  }).promise
+}
+
+// Rendera en PDF-sida till angivet canvas med en bestämd maxbredd.
+async function renderBookletPage(pdf, pageNumber, canvas, maxWidth) {
+  if (!pdf || !canvas) return
+
+  const page = await pdf.getPage(pageNumber)
+  const unscaledViewport = page.getViewport({ scale: 1 })
+  const scale = Math.min(1, maxWidth / unscaledViewport.width)
+  const viewport = page.getViewport({ scale })
+
+  const outputScale = window.devicePixelRatio || 1
+  const context = canvas.getContext('2d')
+
+  canvas.width = Math.floor(viewport.width * outputScale)
+  canvas.height = Math.floor(viewport.height * outputScale)
+  canvas.style.width = `${Math.floor(viewport.width)}px`
+  canvas.style.height = `${Math.floor(viewport.height)}px`
+
+  await page.render({
+    canvasContext: context,
+    viewport,
+    transform: outputScale === 1
+      ? null
+      : [outputScale, 0, 0, outputScale, 0, 0],
+  }).promise
+}
+
+async function renderBookletOriginal() {
+  if (!bookletPreviewPdf) return
+
+  // Rendera sidorna en i taget. Samtidig rendering kan bli tung för
+  // skannade PDF:er med stora bilder och göra gränssnittet trögt.
+  for (let index = 0; index < bookletOriginalCanvases.length; index++) {
+    await renderBookletPage(
+      bookletPreviewPdf,
+      index + 1,
+      bookletOriginalCanvases[index],
+      170
+    )
+
+    // Ge webbläsaren möjlighet att uppdatera gränssnittet mellan sidorna.
+    await new Promise(resolve => setTimeout(resolve, 0))
+  }
+
+  bookletOriginalPreview.hidden = false
+}
+
+// Själva broschyrfilen skapas när filen väljs. Håll nedladdningen dold tills
+// användaren har valt "Gör broschyr" och resultatpreviewn är klar.
+const bookletDownloadObserver = new MutationObserver(() => {
+  if (
+    !bookletPreviewCreated &&
+    bookletPreviewDownload &&
+    !bookletPreviewDownload.hidden
+  ) {
+    bookletPreviewDownload.hidden = true
+  }
+})
+
+if (bookletPreviewDownload) {
+  bookletDownloadObserver.observe(bookletPreviewDownload, {
+    attributes: true,
+    attributeFilter: ['hidden'],
+  })
+}
+
+bookletPreviewInput?.addEventListener('change', async () => {
+  const file = bookletPreviewInput.files?.[0]
+
+  bookletPreviewCreated = false
+  bookletPreviousResultUrl = bookletPdfUrl
+  bookletPreviewPdf = null
+
+  bookletOriginalPreview.hidden = true
+  bookletResultPreview.hidden = true
+  bookletCreateButton.hidden = true
+  bookletPreviewDownload.hidden = true
+
+  if (!file) return
+
+  try {
+    bookletPreviewPdf = await loadBookletPreviewPdf(file)
+
+    // Broschyrfunktionen stöder fortfarande bara exakt fyra sidor.
+    if (bookletPreviewPdf.numPages !== 4) return
+
+    await renderBookletOriginal()
+    bookletCreateButton.hidden = false
+  } catch (error) {
+    bookletOriginalPreview.hidden = true
+    bookletCreateButton.hidden = true
+    console.error('Broschyrens originalpreview kunde inte skapas:', error)
+  }
+})
+
+// Vänta kort på att broschyrfilen ska ha färdigställts.
+async function waitForNewBookletUrl() {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    if (bookletPdfUrl && bookletPdfUrl !== bookletPreviousResultUrl) {
+      return bookletPdfUrl
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 20))
+  }
+
+  return null
+}
+
+bookletCreateButton?.addEventListener('click', async () => {
+  bookletResultPreview.hidden = true
+  bookletPreviewDownload.hidden = true
+
+  const resultUrl = await waitForNewBookletUrl()
+
+  if (!resultUrl) {
+    console.error('Broschyrresultatet hann inte bli färdigt för preview.')
+    return
+  }
+
+  try {
+    const pdfjs = await getBookletPdfJs()
+    const response = await fetch(resultUrl)
+    const bytes = await response.arrayBuffer()
+
+    const resultPdf = await pdfjs.getDocument({
+      data: new Uint8Array(bytes),
+      wasmUrl: './pdfjs/wasm/',
+    }).promise
+
+    // Resultat-PDF:ens sida 1 är arkets framsida och sida 2 är baksidan.
+    await renderBookletPage(resultPdf, 1, bookletFrontCanvas, 360)
+    await renderBookletPage(resultPdf, 2, bookletBackCanvas, 360)
+
+    bookletPreviewCreated = true
+    bookletResultPreview.hidden = false
+    bookletPreviewDownload.hidden = false
+  } catch (error) {
+    console.error('Broschyrens resultatpreview kunde inte skapas:', error)
+  }
+})
