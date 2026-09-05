@@ -71,9 +71,8 @@ button:disabled {
 #merge-file-list li {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr) 28px;
-  grid-template-rows: repeat(2, 28px);
   align-items: center;
-  gap: 6px 8px;
+  gap: 8px;
   min-width: 0;
   padding: 6px;
   border: 1px solid #e0e0e0;
@@ -82,7 +81,6 @@ button:disabled {
 }
 
 #merge-file-list li span {
-  grid-row: 1 / 3;
   min-width: 0;
   overflow-wrap: anywhere;
   text-align: left;
@@ -90,6 +88,8 @@ button:disabled {
 }
 
 #merge-file-list button {
+  grid-column: 3;
+  grid-row: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -101,18 +101,17 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* Båda knapparna ligger i samma gridcell och flyttas lite upp/ner.
+   Då bestämmer previewns höjd hela raden, så miniatyrerna kan inte överlappa. */
 #merge-file-list li button:first-of-type {
-  grid-column: 3;
-  grid-row: 1;
+  transform: translateY(-17px);
 }
 
 #merge-file-list li button:last-of-type {
-  grid-column: 3;
-  grid-row: 2;
+  transform: translateY(17px);
 }
 
 .merge-preview-canvas {
-  grid-row: 1 / 3;
   display: block;
   max-width: 110px;
   height: auto;
