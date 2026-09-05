@@ -23,7 +23,10 @@ const splitSelectButton = document.querySelector('#split-select-button')
 const splitInput = document.querySelector('#split-input')
 const splitMessage = document.querySelector('#split-message')
 const splitPreview = document.querySelector('#split-preview')
-const splitPreviewCanvas = document.querySelector('#split-preview-canvas')
+const splitPreviewLeftCanvas = document.querySelector('#split-preview-left-canvas')
+const splitPreviewRightCanvas = document.querySelector('#split-preview-right-canvas')
+const splitPreviewLeftNumber = document.querySelector('#split-preview-left-number')
+const splitPreviewRightNumber = document.querySelector('#split-preview-right-number')
 const splitControls = document.querySelector('#split-controls')
 const splitAfterPage = document.querySelector('#split-after-page')
 const splitCreateButton = document.querySelector('#split-create-button')
@@ -47,6 +50,7 @@ let bookletPdfUrl = null
 // PDF.js laddas först om en förhandsvisning faktiskt behövs.
 // Biblioteket ligger lokalt i projektets pdfjs-mapp.
 let pdfJsPromise = null
+let selectedSplitPreviewPdf = null
 
 // Egen lista över de valda filerna.
 // Till skillnad från FileList kan en vanlig array ordnas om.
@@ -230,13 +234,8 @@ splitSelectButton?.addEventListener('click', () => {
   splitInput?.click()
 })
 
-// Rendera första sidan av en PDF lokalt i ett canvas-element.
-async function renderSplitPreview(file) {
-  if (!splitPreview || !splitPreviewCanvas) return
-
-  splitPreview.hidden = true
-
-  // Dynamic import gör att PDF.js inte laddas förrän preview används.
+// Ladda vald PDF i PDF.js för lokal förhandsvisning.
+async function loadSplitPreviewPdf(file) {
   if (!pdfJsPromise) {
     pdfJsPromise = import('./pdfjs/pdf.min.mjs')
   }
@@ -245,26 +244,32 @@ async function renderSplitPreview(file) {
   pdfjs.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
 
   const bytes = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({
+
+  selectedSplitPreviewPdf = await pdfjs.getDocument({
     data: new Uint8Array(bytes),
     wasmUrl: './pdfjs/wasm/',
   }).promise
-  const page = await pdf.getPage(1)
+}
 
-  // Anpassa previewn till arbetsytans bredd utan att förstora små sidor.
+// Rendera en sida i ett litet canvas-element.
+async function renderSplitPreviewPage(pageNumber, canvas) {
+  if (!selectedSplitPreviewPdf || !canvas) return
+
+  const page = await selectedSplitPreviewPdf.getPage(pageNumber)
   const unscaledViewport = page.getViewport({ scale: 1 })
-  const availableWidth = Math.min(splitView.clientWidth || 440, 440)
+
+  // Två previews ska få plats bredvid varandra i den 480 px breda arbetsytan.
+  const availableWidth = Math.max(120, Math.min(210, (splitView.clientWidth - 12) / 2))
   const scale = Math.min(1, availableWidth / unscaledViewport.width)
   const viewport = page.getViewport({ scale })
 
-  // Rita med skärmens pixeltäthet så att texten blir skarp även på HiDPI-skärmar.
   const outputScale = window.devicePixelRatio || 1
-  const context = splitPreviewCanvas.getContext('2d')
+  const context = canvas.getContext('2d')
 
-  splitPreviewCanvas.width = Math.floor(viewport.width * outputScale)
-  splitPreviewCanvas.height = Math.floor(viewport.height * outputScale)
-  splitPreviewCanvas.style.width = `${Math.floor(viewport.width)}px`
-  splitPreviewCanvas.style.height = `${Math.floor(viewport.height)}px`
+  canvas.width = Math.floor(viewport.width * outputScale)
+  canvas.height = Math.floor(viewport.height * outputScale)
+  canvas.style.width = `${Math.floor(viewport.width)}px`
+  canvas.style.height = `${Math.floor(viewport.height)}px`
 
   await page.render({
     canvasContext: context,
@@ -273,6 +278,33 @@ async function renderSplitPreview(file) {
       ? null
       : [outputScale, 0, 0, outputScale, 0, 0],
   }).promise
+}
+
+// Visa sidan före och sidan efter den valda delningspunkten.
+async function renderSplitPreviews() {
+  if (
+    !splitPreview ||
+    !splitPreviewLeftCanvas ||
+    !splitPreviewRightCanvas ||
+    !selectedSplitPreviewPdf
+  ) return
+
+  const splitPage = Number(splitAfterPage.value)
+
+  if (splitPage < 1 || splitPage >= selectedSplitPageCount) {
+    splitPreview.hidden = true
+    return
+  }
+
+  splitPreview.hidden = true
+
+  splitPreviewLeftNumber.textContent = splitPage
+  splitPreviewRightNumber.textContent = splitPage + 1
+
+  await Promise.all([
+    renderSplitPreviewPage(splitPage, splitPreviewLeftCanvas),
+    renderSplitPreviewPage(splitPage + 1, splitPreviewRightCanvas),
+  ])
 
   splitPreview.hidden = false
 }
@@ -286,6 +318,7 @@ splitInput?.addEventListener('change', async () => {
   // Ett gammalt resultat och en gammal preview gäller inte längre.
   splitDownload.hidden = true
   splitPreview.hidden = true
+  selectedSplitPreviewPdf = null
 
   selectedSplitFile = file
 
@@ -303,19 +336,31 @@ splitInput?.addEventListener('change', async () => {
   splitMessage.textContent =
     `Den valda PDF-filen har ${selectedSplitPageCount} sidor.`
 
+  // Delningspunkten får inte ligga före första eller efter sista sidan.
+  splitAfterPage.max = selectedSplitPageCount - 1
+  splitAfterPage.value = Math.floor(selectedSplitPageCount / 2)
+  splitControls.hidden = false
+
   // Preview är bara ett hjälpmedel. Om den skulle misslyckas ska delning fortfarande fungera.
   try {
-    await renderSplitPreview(file)
+    await loadSplitPreviewPdf(file)
+    await renderSplitPreviews()
   } catch (error) {
     splitPreview.hidden = true
     console.error('Förhandsvisningen kunde inte skapas:', error)
   }
+})
 
-  // Delningspunkten får inte ligga före första eller efter sista sidan.
-  splitAfterPage.max = selectedSplitPageCount - 1
-  splitAfterPage.value = Math.floor(selectedSplitPageCount / 2)
+// Uppdatera previewn direkt när användaren flyttar delningspunkten.
+splitAfterPage?.addEventListener('input', async () => {
+  splitDownload.hidden = true
 
-  splitControls.hidden = false
+  try {
+    await renderSplitPreviews()
+  } catch (error) {
+    splitPreview.hidden = true
+    console.error('Förhandsvisningen kunde inte uppdateras:', error)
+  }
 })
 
 // Dela den valda PDF-filen i två delar.
