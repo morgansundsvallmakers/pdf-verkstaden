@@ -100,7 +100,7 @@ button:disabled {
 .merge-preview-canvas {
   grid-column: 1 / -1;
   display: block;
-  max-width: 100%;
+  max-width: 81%;
   height: auto;
   margin: 0 auto 4px;
   border: 1px solid #d6d6d6;
@@ -126,7 +126,7 @@ button:disabled {
 
 .split-preview-page canvas {
   display: block;
-  max-width: 100%;
+  max-width: 81%;
   height: auto;
   margin: 0 auto;
   border: 1px solid #d6d6d6;
