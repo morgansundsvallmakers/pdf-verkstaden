@@ -2,7 +2,6 @@
 // PREVIEW FÖR GÖR BROSCHYR
 // ------------------------------------------------------------
 
-// Den här filen är separat från main.js medan preview-idén testas.
 // Först visas originalets fyra sidor. När användaren väljer "Gör broschyr"
 // visas sedan de två verkliga arken från den skapade broschyr-PDF:en.
 
@@ -76,8 +75,8 @@ async function renderBookletPage(pdf, pageNumber, canvas, maxWidth) {
 async function renderBookletOriginal() {
   if (!bookletPreviewPdf) return
 
-  // Rendera sidorna en i taget. Fyra samtidiga renderingar kan bli tungt,
-  // särskilt för skannade PDF:er med stora bilder.
+  // Rendera sidorna en i taget. Samtidig rendering kan bli tung för
+  // skannade PDF:er med stora bilder och göra gränssnittet trögt.
   for (let index = 0; index < bookletOriginalCanvases.length; index++) {
     await renderBookletPage(
       bookletPreviewPdf,
@@ -86,19 +85,16 @@ async function renderBookletOriginal() {
       170
     )
 
-    // Ge webbläsaren en chans att uppdatera gränssnittet mellan sidorna.
+    // Ge webbläsaren möjlighet att uppdatera gränssnittet mellan sidorna.
     await new Promise(resolve => setTimeout(resolve, 0))
   }
 
   bookletOriginalPreview.hidden = false
 }
 
-// main.js skapar fortfarande själva broschyrfilen. Medan vi testar det nya
-// gränssnittet håller vi nedladdningen dold tills användaren klickar på
-// "Gör broschyr", så att före- och efterstegen blir tydliga.
+// main.js skapar själva broschyrfilen när filen väljs. Håll nedladdningen
+// dold tills användaren har valt "Gör broschyr" och resultatpreviewn är klar.
 const bookletDownloadObserver = new MutationObserver(() => {
-  // Ändra bara attributet om main.js faktiskt har visat nedladdningen.
-  // Annars skulle observern reagera på sin egen ändring om och om igen.
   if (
     !bookletPreviewCreated &&
     bookletPreviewDownload &&
