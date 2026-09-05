@@ -76,11 +76,19 @@ async function renderBookletPage(pdf, pageNumber, canvas, maxWidth) {
 async function renderBookletOriginal() {
   if (!bookletPreviewPdf) return
 
-  await Promise.all(
-    bookletOriginalCanvases.map((canvas, index) =>
-      renderBookletPage(bookletPreviewPdf, index + 1, canvas, 210)
+  // Rendera sidorna en i taget. Fyra samtidiga renderingar kan bli tungt,
+  // särskilt för skannade PDF:er med stora bilder.
+  for (let index = 0; index < bookletOriginalCanvases.length; index++) {
+    await renderBookletPage(
+      bookletPreviewPdf,
+      index + 1,
+      bookletOriginalCanvases[index],
+      210
     )
-  )
+
+    // Ge webbläsaren en chans att uppdatera gränssnittet mellan sidorna.
+    await new Promise(resolve => setTimeout(resolve, 0))
+  }
 
   bookletOriginalPreview.hidden = false
 }
