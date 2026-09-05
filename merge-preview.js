@@ -2,8 +2,8 @@
 // PREVIEW FÖR SLÅ IHOP PDF
 // ------------------------------------------------------------
 
-// Den här filen är medvetet separat från main.js medan preview-idén testas.
-// PDF.js laddas lokalt och bara när användaren väljer filer att slå ihop.
+// Förhandsvisningen ligger separat från main.js så att huvudlogiken för
+// sammanslagningen hålls enkel. PDF.js laddas lokalt och först när det behövs.
 
 const mergePreviewInput = document.querySelector('#merge-input')
 const mergePreviewList = document.querySelector('#merge-file-list')
@@ -33,8 +33,6 @@ async function renderMergePreview(file, canvas) {
 
   const page = await pdf.getPage(1)
   const unscaledViewport = page.getViewport({ scale: 1 })
-
-  // Samma ungefärliga bredd som previews i Dela PDF.
   const availableWidth = 210
   const scale = Math.min(1, availableWidth / unscaledViewport.width)
   const viewport = page.getViewport({ scale })
@@ -56,8 +54,8 @@ async function renderMergePreview(file, canvas) {
   }).promise
 }
 
-// main.js skapar själva listan och pilknapparna. Här kompletterar vi
-// varje listpost med en preview av första sidan.
+// main.js skapar listan och pilknapparna. Här kompletteras varje listpost
+// med en preview av den första sidan.
 async function renderMergePreviews() {
   if (!mergePreviewList) return
 
@@ -89,8 +87,8 @@ mergePreviewInput?.addEventListener('change', () => {
   renderMergePreviews()
 })
 
-// main.js flyttar filerna när ↑ eller ↓ används. Vi speglar samma flyttning
-// i vår preview-lista innan main.js bygger om listan.
+// main.js flyttar filerna när ↑ eller ↓ används. Spegla samma flyttning
+// i preview-listan innan main.js bygger om listan.
 mergePreviewList?.addEventListener('click', (event) => {
   const button = event.target.closest('button')
   const item = event.target.closest('li')
@@ -112,11 +110,8 @@ mergePreviewList?.addEventListener('click', (event) => {
   }
 }, true)
 
-// När main.js bygger om <ul>-listan efter en ordningsändring försvinner de gamla
-// canvas-elementen tillsammans med de gamla <li>-elementen. MutationObservern
-// ser att själva listans barn har bytts ut och lägger då tillbaka previews i
-// den nya ordningen. Ändringar inne i en listpost ignoreras, så att vi inte
-// triggar oss själva när canvas-elementen läggs till.
+// När main.js bygger om <ul>-listan försvinner canvas-elementen tillsammans
+// med de gamla <li>-elementen. Lägg då tillbaka previews i den nya ordningen.
 if (mergePreviewList) {
   const mergeListObserver = new MutationObserver((mutations) => {
     const listWasRebuilt = mutations.some(
