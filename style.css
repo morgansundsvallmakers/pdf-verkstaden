@@ -58,23 +58,25 @@ button:disabled {
   background: transparent;
 }
 
+/* Slå ihop fungerar främst som en sorteringslista. Previewn är därför
+   avsiktligt liten: den ska hjälpa till att känna igen filen, inte läsa den. */
 #merge-file-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   padding: 0;
   list-style: none;
 }
 
 #merge-file-list li {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 110px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
-  padding: 8px;
-  border: 1px solid #d6d6d6;
-  border-radius: 8px;
+  padding: 6px;
+  border: 1px solid #e0e0e0;
+  border-radius: 7px;
   background: white;
 }
 
@@ -98,11 +100,10 @@ button:disabled {
 }
 
 .merge-preview-canvas {
-  grid-column: 1 / -1;
   display: block;
-  max-width: 81%;
+  max-width: 110px;
   height: auto;
-  margin: 0 auto 4px;
+  margin: 0;
   border: 1px solid #d6d6d6;
   background: white;
 }
@@ -170,7 +171,14 @@ button:disabled {
 }
 
 @media (max-width: 420px) {
-  #merge-file-list,
+  #merge-file-list li {
+    grid-template-columns: 90px minmax(0, 1fr) auto auto;
+  }
+
+  .merge-preview-canvas {
+    max-width: 90px;
+  }
+
   #split-preview,
   .booklet-original-grid {
     grid-template-columns: 1fr;
